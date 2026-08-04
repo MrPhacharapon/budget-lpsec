@@ -173,7 +173,7 @@
   }
 
   html {
-    @apply font-sans;
+    /* Font handled by layout.tsx body className */
   }
 }
 

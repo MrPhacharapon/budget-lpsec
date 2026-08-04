@@ -60,7 +60,7 @@ export default function RootLayout({
         `}} />
       </head>
       <body
-        className={`min-h-screen font-sans antialiased ${outfit.variable} ${sarabun.variable} overflow-hidden`}
+        className={`min-h-screen ${sarabun.className} antialiased overflow-hidden`}
       >
         <div className="flex h-screen w-full relative z-10 p-4 gap-4">
           
