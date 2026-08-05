@@ -122,14 +122,18 @@
     @apply border-border outline-ring/50;
   }
   body {
-    background-color: #f4f6fc;
+    /* Ocean Clear Theme: Clean, Fresh Sea Water */
+    background-color: #f0f9ff;
     background-image: 
-      radial-gradient(circle at 10% 20%, #e0e7ff 0%, transparent 40%),
-      radial-gradient(circle at 90% 10%, #fef3c7 0%, transparent 35%),
-      radial-gradient(circle at 50% 80%, #fae8ff 0%, transparent 45%);
+      radial-gradient(circle at 10% 20%, #e0f2fe 0%, transparent 40%),
+      radial-gradient(circle at 90% 10%, #ecfeff 0%, transparent 35%),
+      radial-gradient(circle at 50% 80%, #f0fdfa 0%, transparent 45%);
     background-attachment: fixed;
     color: #0f172a;
     min-height: 100vh;
+    /* Prevent Thai word tearing globally on body */
+    word-break: keep-all;
+    overflow-wrap: break-word;
   }
   
   body::before {
@@ -139,12 +143,12 @@
     left: -5%;
     width: 45vw;
     height: 45vw;
-    background: radial-gradient(circle, rgba(165, 180, 252, 0.25) 0%, rgba(165, 180, 252, 0) 70%);
+    background: radial-gradient(circle, rgba(14, 165, 233, 0.12) 0%, rgba(14, 165, 233, 0) 70%);
     border-radius: 50%;
     filter: blur(80px);
     pointer-events: none;
-    z-index: -2;
-    animation: float-blob-1 22s infinite alternate ease-in-out;
+    z-index: -1;
+    animation: float-blob-1 25s infinite alternate ease-in-out;
   }
 
   body::after {
@@ -154,40 +158,42 @@
     right: -5%;
     width: 55vw;
     height: 55vw;
-    background: radial-gradient(circle, rgba(253, 186, 116, 0.18) 0%, rgba(253, 186, 116, 0) 70%);
+    background: radial-gradient(circle, rgba(45, 212, 191, 0.15) 0%, rgba(45, 212, 191, 0) 70%);
     border-radius: 50%;
     filter: blur(100px);
     pointer-events: none;
-    z-index: -2;
-    animation: float-blob-2 28s infinite alternate ease-in-out;
+    z-index: -1;
+    animation: float-blob-2 30s infinite alternate ease-in-out;
   }
 
   @keyframes float-blob-1 {
     0% { transform: translate(0, 0) scale(1); }
-    100% { transform: translate(5vw, 5vh) scale(1.08); }
+    100% { transform: translate(3vw, 3vh) scale(1.05); }
   }
 
   @keyframes float-blob-2 {
     0% { transform: translate(0, 0) scale(1); }
-    100% { transform: translate(-5vw, -5vh) scale(0.95); }
-  }
-
-  html {
-    /* Font handled by layout.tsx body className */
+    100% { transform: translate(-3vw, -3vh) scale(0.98); }
   }
 }
 
 @layer components {
+  /* True Glassmorphism: more translucent, strong blur, crisp white edges, deeper shadow */
   .glass-panel {
-    @apply bg-white/45 backdrop-blur-[25px] saturate-[190%] border border-white/50 shadow-[0_10px_40px_-10px_rgba(31,38,135,0.06),_0_1px_2px_0_rgba(31,38,135,0.02)] transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)];
-    box-shadow: 0 10px 40px -10px rgba(31, 38, 135, 0.06), 0 1px 2px 0 rgba(31, 38, 135, 0.02), inset 0 1px 0 0 rgba(255, 255, 255, 0.8), inset 0 -1px 0 0 rgba(255, 255, 255, 0.2);
+    @apply bg-white/60 backdrop-blur-2xl border border-white/80 shadow-[0_8px_30px_rgb(0,0,0,0.06)] transition-all duration-300;
   }
   
   .glass-panel:hover {
-    @apply border-white/85 bg-white/65 shadow-[0_16px_45px_-10px_rgba(31,38,135,0.12)];
+    @apply shadow-[0_12px_40px_rgb(0,0,0,0.09)] border-white;
   }
 
   .sidebar-glass {
-    @apply bg-white/40 backdrop-blur-[25px] saturate-[190%] border border-white/50 shadow-[0_10px_40px_-10px_rgba(31,38,135,0.06)];
+    @apply bg-white/60 backdrop-blur-2xl border-r border-white/80 shadow-[2px_0_20px_rgb(0,0,0,0.04)];
+  }
+  
+  /* Text protection */
+  .keep-all {
+    word-break: keep-all;
+    overflow-wrap: break-word;
   }
 }

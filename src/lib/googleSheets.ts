@@ -36,10 +36,12 @@ export async function getGroupSummary(groupId: keyof typeof sheetIds) {
   
   let totalAllocated = 0;
   let totalSpent = 0;
+  let jobCount = 0;
+  let projectCount = 0;
   const projects: any[] = [];
 
   if (tabs.length === 0) {
-    return { groupId, totalAllocated: 0, totalSpent: 0, totalRemaining: 0, projects: [], hasDiscrepancy: false };
+    return { groupId, totalAllocated: 0, totalSpent: 0, totalRemaining: 0, projects: [], hasDiscrepancy: false, jobCount: 0, projectCount: 0 };
   }
 
   const ranges = tabs.map((tab: string) => `'${tab}'!A1:Z`);
@@ -90,7 +92,7 @@ export async function getGroupSummary(groupId: keyof typeof sheetIds) {
          if (rows[0] && rows[0][0]) {
              const a1 = rows[0][0].toString();
              if (a1.includes('ทะเบียนคุมงบประมาณ')) {
-                 projectName = a1.replace('ทะเบียนคุมงบประมาณ', '').replace('งาน', '').trim();
+                 projectName = a1.replace('ทะเบียนคุมงบประมาณ', '').trim();
              }
          }
          if (headerRowIndex !== -1 && rows.length > headerRowIndex + 1) {
@@ -112,6 +114,15 @@ export async function getGroupSummary(groupId: keyof typeof sheetIds) {
 
       totalAllocated += allocated;
       totalSpent += spent;
+
+      if (projectName.includes('โครงการ')) {
+        projectCount++;
+      } else if (projectName.includes('งาน')) {
+        jobCount++;
+      } else {
+        // Fallback for names that might not explicitly contain the word but are tabs
+        projectCount++;
+      }
 
       projects.push({
         name: projectName,
@@ -147,7 +158,9 @@ export async function getGroupSummary(groupId: keyof typeof sheetIds) {
       summarySpent,
       hasDiscrepancy,
       isAllocatedMismatch,
-      isSpentMismatch
+      isSpentMismatch,
+      jobCount,
+      projectCount
     };
   } catch (e: any) {
     console.error(`Error batch fetching for ${groupId}:`, e.message);
@@ -157,7 +170,9 @@ export async function getGroupSummary(groupId: keyof typeof sheetIds) {
       totalSpent: 0,
       totalRemaining: 0,
       projects: [],
-      hasDiscrepancy: false
+      hasDiscrepancy: false,
+      jobCount: 0,
+      projectCount: 0
     };
   }
 }
@@ -211,7 +226,7 @@ export async function getProjectDetails(groupId: keyof typeof sheetIds, tabName:
      if (rows[0] && rows[0][0]) {
          const a1 = rows[0][0].toString();
          if (a1.includes('ทะเบียนคุมงบประมาณ')) {
-             projectName = a1.replace('ทะเบียนคุมงบประมาณ', '').replace('งาน', '').trim();
+             projectName = a1.replace('ทะเบียนคุมงบประมาณ', '').trim();
          }
      }
      if (headerRowIndex !== -1 && rows.length > headerRowIndex + 1) {
