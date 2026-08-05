@@ -4,8 +4,8 @@ import TransactionForm from '@/components/TransactionForm';
 
 export const dynamic = 'force-dynamic';
 
-export default async function ProjectPage({ params }: { params: { id: keyof typeof sheetIds, projectId: string } }) {
-  const { id, projectId } = params;
+export default async function ProjectPage({ params }: { params: Promise<{ id: keyof typeof sheetIds, projectId: string }> }) {
+  const { id, projectId } = await params;
   const decodedTabName = decodeURIComponent(projectId);
   
   if (!sheetIds[id]) {

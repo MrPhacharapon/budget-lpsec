@@ -3,8 +3,8 @@ import Link from 'next/link';
 
 export const dynamic = 'force-dynamic';
 
-export default async function GroupPage({ params }: { params: { id: keyof typeof sheetIds } }) {
-  const { id } = params;
+export default async function GroupPage({ params }: { params: Promise<{ id: keyof typeof sheetIds }> }) {
+  const { id } = await params;
   
   if (!sheetIds[id]) {
     return <div className="p-10 text-center text-xl text-red-500 glass-panel rounded-2xl">ไม่พบกลุ่มงานที่ระบุ</div>;
