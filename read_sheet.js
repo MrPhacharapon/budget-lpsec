@@ -25,7 +25,7 @@ async function readSheet() {
     console.log(`พบแผ่นงาน (Tabs) จำนวน ${metaData.data.sheets.length} แผ่น:`);
     
     // อ่านข้อมูลจากแผ่นงานแรกสุด
-    const firstSheetName = metaData.data.sheets[0].properties.title;
+    const firstSheetName = metaData.data.sheets[2].properties.title;
     console.log(`\nกำลังอ่านข้อมูลจากแผ่นงาน: "${firstSheetName}" (บรรทัดที่ 1-10)...`);
     
     const response = await sheets.spreadsheets.values.get({

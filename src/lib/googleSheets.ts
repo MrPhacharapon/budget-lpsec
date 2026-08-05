@@ -29,9 +29,8 @@ export async function getGroupSummary(groupId: keyof typeof sheetIds) {
     throw new Error(`ไม่พบ Spreadsheet ID สำหรับกลุ่มงาน ${groupId}`);
   }
 
-  // ดึงรายชื่อแท็บ (Projects) ทั้งหมดในไฟล์
   const metaData = await sheets.spreadsheets.get({ spreadsheetId });
-  const tabs = (metaData.data.sheets?.map(s => s.properties?.title) || []).filter(t => t !== 'Summary' && t !== 'Template' && t !== 'admin_user');
+  const tabs = (metaData.data.sheets?.map(s => s.properties?.title) || []).filter(t => t !== 'Summary' && t !== 'Template' && t !== 'admin_user' && t !== 'รวมวิชาการ');
   
   let totalAllocated = 0;
   let totalSpent = 0;
@@ -41,8 +40,7 @@ export async function getGroupSummary(groupId: keyof typeof sheetIds) {
     return { groupId, totalAllocated: 0, totalSpent: 0, totalRemaining: 0, projects: [] };
   }
 
-  // สร้าง ranges สำหรับ batchGet
-  const ranges = tabs.flatMap(tab => [`'${tab}'!A3:I10`, `'${tab}'!A10:H`]);
+  const ranges = tabs.map(tab => `'${tab}'!A1:Z`);
 
   try {
     const batchResponse = await sheets.spreadsheets.values.batchGet({
@@ -54,26 +52,55 @@ export async function getGroupSummary(groupId: keyof typeof sheetIds) {
 
     for (let i = 0; i < tabs.length; i++) {
       const tab = tabs[i];
-      const headerRows = valueRanges[i * 2]?.values || [];
-      const expenseRows = valueRanges[i * 2 + 1]?.values || [];
+      const rows = valueRanges[i]?.values || [];
+      if (rows.length === 0) continue;
 
-      // โครงสร้างไฟล์: A3 = ชื่องาน/โครงการ: XXX, D3 = งบประมาณที่ได้รับ: YYY
-      const projectNameRow = headerRows.find(r => r[0] && r[0].includes('ชื่องาน/โครงการ:'));
-      const allocatedStr = projectNameRow && projectNameRow.length >= 4 ? projectNameRow[3] : '0';
-      const allocated = parseFloat(allocatedStr.toString().replace(/,/g, '')) || 0;
+      const headerRowIndex = rows.findIndex(r => r.some(cell => cell && (cell.toString().includes('วัน/เดือน/ปี') || cell.toString().includes('วันที่'))));
+      const headerRow = headerRowIndex !== -1 ? rows[headerRowIndex] : [];
+      
+      const paidIndex = headerRow.findIndex(cell => cell === 'จ่าย' || cell === 'รายจ่าย');
+      const receivedIndex = headerRow.findIndex(cell => cell === 'รับ' || cell === 'รายรับ');
+      const remainingIndex = headerRow.findIndex(cell => cell === 'คงเหลือ');
+
+      let allocated = 0;
+      let projectName = tab;
+      
+      const projectNameRowOld = rows.find(r => r[0] && r[0].toString().includes('ชื่องาน/โครงการ:'));
+      
+      if (projectNameRowOld) {
+         projectName = projectNameRowOld[0].toString().replace('ชื่องาน/โครงการ:', '').trim();
+         if (projectNameRowOld.length >= 4) {
+             allocated = parseFloat(projectNameRowOld[3].toString().replace(/,/g, '')) || 0;
+         }
+      } else {
+         if (rows[0] && rows[0][0]) {
+             const a1 = rows[0][0].toString();
+             if (a1.includes('ทะเบียนคุมงบประมาณ')) {
+                 projectName = a1.replace('ทะเบียนคุมงบประมาณ', '').replace('งาน', '').trim();
+             }
+         }
+         if (headerRowIndex !== -1 && rows.length > headerRowIndex + 1) {
+             const budgetRow = rows[headerRowIndex + 1];
+             if (!budgetRow[1] && remainingIndex !== -1) {
+                 allocated = parseFloat((budgetRow[remainingIndex] || '0').toString().replace(/,/g, '')) || 0;
+             }
+         }
+      }
 
       let spent = 0;
-      expenseRows.forEach(row => {
-        if (row[5]) { // คอลัมน์ F (จำนวนเงิน)
-          spent += parseFloat(row[5].toString().replace(/,/g, '')) || 0;
-        }
-      });
+      const startIndex = headerRowIndex !== -1 ? headerRowIndex + 1 : 9;
+      for (let r = startIndex; r < rows.length; r++) {
+         const row = rows[r];
+         if (!row[1]) continue; 
+         const paid = paidIndex !== -1 ? parseFloat((row[paidIndex] || '0').toString().replace(/,/g, '')) || 0 : 0;
+         spent += paid;
+      }
 
       totalAllocated += allocated;
       totalSpent += spent;
 
       projects.push({
-        name: projectNameRow ? projectNameRow[0].replace('ชื่องาน/โครงการ:', '').trim() : tab,
+        name: projectName,
         tabName: tab,
         allocated,
         spent,
@@ -101,35 +128,72 @@ export async function getProjectDetails(groupId: keyof typeof sheetIds, tabName:
     throw new Error(`ไม่พบ Spreadsheet ID สำหรับกลุ่มงาน ${groupId}`);
   }
 
-  const response = await sheets.spreadsheets.values.batchGet({
+  const response = await sheets.spreadsheets.values.get({
     spreadsheetId,
-    ranges: [`'${tabName}'!A3:I10`, `'${tabName}'!A10:H`],
+    range: `'${tabName}'!A1:Z`,
   });
 
-  const headerRows = response.data.valueRanges?.[0]?.values || [];
-  const expenseRows = response.data.valueRanges?.[1]?.values || [];
+  const rows = response.data.values || [];
+  
+  const headerRowIndex = rows.findIndex(r => r.some(cell => cell && (cell.toString().includes('วัน/เดือน/ปี') || cell.toString().includes('วันที่'))));
+  const headerRow = headerRowIndex !== -1 ? rows[headerRowIndex] : [];
+  
+  const paidIndex = headerRow.findIndex(cell => cell === 'จ่าย' || cell === 'รายจ่าย');
+  const receivedIndex = headerRow.findIndex(cell => cell === 'รับ' || cell === 'รายรับ');
+  const remainingIndex = headerRow.findIndex(cell => cell === 'คงเหลือ');
+  const noteIndex = headerRow.findIndex(cell => cell === 'หมายเหตุ');
 
-  const projectNameRow = headerRows.find(r => r[0] && r[0].includes('ชื่องาน/โครงการ:'));
-  const projectName = projectNameRow ? projectNameRow[0].replace('ชื่องาน/โครงการ:', '').trim() : tabName;
-  const allocatedStr = projectNameRow && projectNameRow.length >= 4 ? projectNameRow[3] : '0';
-  const allocated = parseFloat(allocatedStr.toString().replace(/,/g, '')) || 0;
+  let allocated = 0;
+  let projectName = tabName;
+  
+  const projectNameRowOld = rows.find(r => r[0] && r[0].toString().includes('ชื่องาน/โครงการ:'));
+  
+  if (projectNameRowOld) {
+     projectName = projectNameRowOld[0].toString().replace('ชื่องาน/โครงการ:', '').trim();
+     if (projectNameRowOld.length >= 4) {
+         allocated = parseFloat(projectNameRowOld[3].toString().replace(/,/g, '')) || 0;
+     }
+  } else {
+     if (rows[0] && rows[0][0]) {
+         const a1 = rows[0][0].toString();
+         if (a1.includes('ทะเบียนคุมงบประมาณ')) {
+             projectName = a1.replace('ทะเบียนคุมงบประมาณ', '').replace('งาน', '').trim();
+         }
+     }
+     if (headerRowIndex !== -1 && rows.length > headerRowIndex + 1) {
+         const budgetRow = rows[headerRowIndex + 1];
+         if (!budgetRow[1] && remainingIndex !== -1) {
+             allocated = parseFloat((budgetRow[remainingIndex] || '0').toString().replace(/,/g, '')) || 0;
+         }
+     }
+  }
 
   let spent = 0;
-  const transactions = expenseRows.filter(r => r[1]).map((row, index) => { // กรองเฉพาะแถวที่มีวันที่
-    const received = parseFloat(row[4]?.toString().replace(/,/g, '')) || 0;
-    const paid = parseFloat(row[5]?.toString().replace(/,/g, '')) || 0;
-    spent += paid;
-    return {
-      id: index,
-      no: row[0] || '',
-      date: row[1] || '',
-      description: row[2] || row[3] || '',
-      received,
-      paid,
-      remaining: parseFloat(row[6]?.toString().replace(/,/g, '')) || 0,
-      note: row[7] || '',
-    };
-  });
+  const transactions: any[] = [];
+  const startIndex = headerRowIndex !== -1 ? headerRowIndex + 1 : 9;
+  
+  for (let r = startIndex; r < rows.length; r++) {
+     const row = rows[r];
+     if (!row[1]) continue; 
+
+     const received = receivedIndex !== -1 ? parseFloat((row[receivedIndex] || '0').toString().replace(/,/g, '')) || 0 : 0;
+     const paid = paidIndex !== -1 ? parseFloat((row[paidIndex] || '0').toString().replace(/,/g, '')) || 0 : 0;
+     const remaining = remainingIndex !== -1 ? parseFloat((row[remainingIndex] || '0').toString().replace(/,/g, '')) || 0 : 0;
+     const note = noteIndex !== -1 ? (row[noteIndex] || '') : (row[row.length - 1] || '');
+
+     spent += paid;
+
+     transactions.push({
+        id: r,
+        no: row[0] || '',
+        date: row[1] || '',
+        description: row[2] || '',
+        received,
+        paid,
+        remaining,
+        note
+     });
+  }
 
   return {
     groupId,
@@ -150,21 +214,35 @@ export async function addTransaction(groupId: keyof typeof sheetIds, tabName: st
     throw new Error(`ไม่พบ Spreadsheet ID สำหรับกลุ่มงาน ${groupId}`);
   }
 
-  // รูปแบบแถว: [ลำดับที่, วันที่, รายการ, ว่าง, รับ, จ่าย, คงเหลือ(ปล่อยให้สูตรคำนวณ หรือส่งไปอัปเดต), หมายเหตุ]
-  const rowData = [
-    data.no || '',
-    data.date || '',
-    data.description || '',
-    '', // คอลัมน์ C/D ใช้ merge กันในไฟล์เก่า
-    data.received || '',
-    data.paid || '',
-    '', // คงเหลือ - ในไฟล์จริงมักจะเป็นสูตร เราอาจเว้นไว้เพื่อให้ผู้ใช้ลากสูตร หรือคำนวณให้
-    data.note || ''
-  ];
+  // ดึง Header มาตรวจสอบโครงสร้างคอลัมน์
+  const response = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range: `'${tabName}'!A1:Z10`,
+  });
+  
+  const rows = response.data.values || [];
+  const headerRowIndex = rows.findIndex(r => r.some(cell => cell && (cell.toString().includes('วัน/เดือน/ปี') || cell.toString().includes('วันที่'))));
+  const headerRow = headerRowIndex !== -1 ? rows[headerRowIndex] : [];
+  
+  const paidIndex = headerRow.findIndex(cell => cell === 'จ่าย' || cell === 'รายจ่าย');
+  const receivedIndex = headerRow.findIndex(cell => cell === 'รับ' || cell === 'รายรับ');
+  const noteIndex = headerRow.findIndex(cell => cell === 'หมายเหตุ');
+  
+  // สร้าง Array เปล่าให้มีความยาวเท่ากับ Header
+  const rowLength = Math.max(headerRow.length, 7);
+  const rowData = new Array(rowLength).fill('');
+  
+  rowData[0] = data.no || '';
+  rowData[1] = data.date || '';
+  rowData[2] = data.description || '';
+  
+  if (receivedIndex !== -1) rowData[receivedIndex] = data.received || '';
+  if (paidIndex !== -1) rowData[paidIndex] = data.paid || '';
+  if (noteIndex !== -1) rowData[noteIndex] = data.note || '';
 
   await sheets.spreadsheets.values.append({
     spreadsheetId,
-    range: `'${tabName}'!A10:H`,
+    range: `'${tabName}'!A1:A`,
     valueInputOption: 'USER_ENTERED',
     requestBody: {
       values: [rowData],
