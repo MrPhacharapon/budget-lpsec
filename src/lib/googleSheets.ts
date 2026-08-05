@@ -58,9 +58,18 @@ export async function getGroupSummary(groupId: keyof typeof sheetIds) {
       const headerRowIndex = rows.findIndex(r => r.some(cell => cell && (cell.toString().includes('วัน/เดือน/ปี') || cell.toString().includes('วันที่'))));
       const headerRow = headerRowIndex !== -1 ? rows[headerRowIndex] : [];
       
-      const paidIndex = headerRow.findIndex(cell => cell === 'จ่าย' || cell === 'รายจ่าย');
-      const receivedIndex = headerRow.findIndex(cell => cell === 'รับ' || cell === 'รายรับ');
-      const remainingIndex = headerRow.findIndex(cell => cell === 'คงเหลือ');
+      const paidIndex = headerRow.findIndex(cell => {
+         const text = (cell || '').toString().trim();
+         return text === 'จ่าย' || text === 'รายจ่าย';
+      });
+      const receivedIndex = headerRow.findIndex(cell => {
+         const text = (cell || '').toString().trim();
+         return text === 'รับ' || text === 'รายรับ';
+      });
+      const remainingIndex = headerRow.findIndex(cell => {
+         const text = (cell || '').toString().trim();
+         return text === 'คงเหลือ';
+      });
 
       let allocated = 0;
       let projectName = tab;
@@ -138,10 +147,22 @@ export async function getProjectDetails(groupId: keyof typeof sheetIds, tabName:
   const headerRowIndex = rows.findIndex(r => r.some(cell => cell && (cell.toString().includes('วัน/เดือน/ปี') || cell.toString().includes('วันที่'))));
   const headerRow = headerRowIndex !== -1 ? rows[headerRowIndex] : [];
   
-  const paidIndex = headerRow.findIndex(cell => cell === 'จ่าย' || cell === 'รายจ่าย');
-  const receivedIndex = headerRow.findIndex(cell => cell === 'รับ' || cell === 'รายรับ');
-  const remainingIndex = headerRow.findIndex(cell => cell === 'คงเหลือ');
-  const noteIndex = headerRow.findIndex(cell => cell === 'หมายเหตุ');
+  const paidIndex = headerRow.findIndex(cell => {
+     const text = (cell || '').toString().trim();
+     return text === 'จ่าย' || text === 'รายจ่าย';
+  });
+  const receivedIndex = headerRow.findIndex(cell => {
+     const text = (cell || '').toString().trim();
+     return text === 'รับ' || text === 'รายรับ';
+  });
+  const remainingIndex = headerRow.findIndex(cell => {
+     const text = (cell || '').toString().trim();
+     return text === 'คงเหลือ';
+  });
+  const noteIndex = headerRow.findIndex(cell => {
+     const text = (cell || '').toString().trim();
+     return text === 'หมายเหตุ';
+  });
 
   let allocated = 0;
   let projectName = tabName;
@@ -224,9 +245,18 @@ export async function addTransaction(groupId: keyof typeof sheetIds, tabName: st
   const headerRowIndex = rows.findIndex(r => r.some(cell => cell && (cell.toString().includes('วัน/เดือน/ปี') || cell.toString().includes('วันที่'))));
   const headerRow = headerRowIndex !== -1 ? rows[headerRowIndex] : [];
   
-  const paidIndex = headerRow.findIndex(cell => cell === 'จ่าย' || cell === 'รายจ่าย');
-  const receivedIndex = headerRow.findIndex(cell => cell === 'รับ' || cell === 'รายรับ');
-  const noteIndex = headerRow.findIndex(cell => cell === 'หมายเหตุ');
+  const paidIndex = headerRow.findIndex(cell => {
+     const text = (cell || '').toString().trim();
+     return text === 'จ่าย' || text === 'รายจ่าย';
+  });
+  const receivedIndex = headerRow.findIndex(cell => {
+     const text = (cell || '').toString().trim();
+     return text === 'รับ' || text === 'รายรับ';
+  });
+  const noteIndex = headerRow.findIndex(cell => {
+     const text = (cell || '').toString().trim();
+     return text === 'หมายเหตุ';
+  });
   
   // สร้าง Array เปล่าให้มีความยาวเท่ากับ Header
   const rowLength = Math.max(headerRow.length, 7);
