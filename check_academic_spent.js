@@ -1,7 +1,7 @@
 require('dotenv').config({ path: '.env.local' });
 const { google } = require('googleapis');
 
-async function checkNow() {
+async function verify() {
   const auth = new google.auth.GoogleAuth({
     credentials: {
       client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
@@ -12,60 +12,57 @@ async function checkNow() {
   const sheets = google.sheets({ version: 'v4', auth });
   const spreadsheetId = process.env.SHEET_ID_ACADEMIC;
 
-  console.log(`\n=== RECHECK at ${new Date().toISOString()} ===`);
-  
-  // Test 1: ดึงด้วย UNFORMATTED_VALUE (ค่าดิบจริงๆ ไม่ผ่านฟอร์แมต)
-  console.log('\n--- Test 1: UNFORMATTED_VALUE ---');
-  const res1 = await sheets.spreadsheets.values.get({
-    spreadsheetId,
-    range: "'7กิจกรรมนักเรียน'!A7:G7",
-    valueRenderOption: 'UNFORMATTED_VALUE',
-  });
-  console.log('Row 7 raw data:', JSON.stringify(res1.data.values));
-
-  // Test 2: ดึงด้วย FORMATTED_VALUE (ค่าที่แสดงในหน้าจอ)
-  console.log('\n--- Test 2: FORMATTED_VALUE ---');
-  const res2 = await sheets.spreadsheets.values.get({
-    spreadsheetId,
-    range: "'7กิจกรรมนักเรียน'!A7:G7",
-    valueRenderOption: 'FORMATTED_VALUE',
-  });
-  console.log('Row 7 formatted data:', JSON.stringify(res2.data.values));
-  
-  // Test 3: ดึงด้วย FORMULA (ดูว่ามีสูตรอะไรซ่อนอยู่ไหม)
-  console.log('\n--- Test 3: FORMULA ---');
-  const res3 = await sheets.spreadsheets.values.get({
-    spreadsheetId,
-    range: "'7กิจกรรมนักเรียน'!A7:G7",
-    valueRenderOption: 'FORMULA',
-  });
-  console.log('Row 7 formula data:', JSON.stringify(res3.data.values));
-  
-  // Test 4: ดึง Row 5-8 เทียบกัน
-  console.log('\n--- Test 4: Rows 5-8 (FORMATTED_VALUE) ---');
-  const res4 = await sheets.spreadsheets.values.get({
+  // เช็ค Row 7 ว่าลบแล้วจริงไหม
+  console.log('=== Verify Row 7 deleted ===');
+  const res = await sheets.spreadsheets.values.get({
     spreadsheetId,
     range: "'7กิจกรรมนักเรียน'!A5:G8",
     valueRenderOption: 'FORMATTED_VALUE',
   });
-  const rows = res4.data.values || [];
+  const rows = res.data.values || [];
   for (let i = 0; i < rows.length; i++) {
     console.log(`Sheet Row ${i+5}: ${JSON.stringify(rows[i])}`);
   }
+
+  // คำนวณยอดรวมใช้ไปใหม่ทั้งกลุ่มวิชาการ
+  console.log('\n=== Recalculate Total Spent ===');
+  const metaData = await sheets.spreadsheets.get({ spreadsheetId });
+  const allTabs = metaData.data.sheets.map(s => s.properties.title);
+  const tabs = allTabs.filter(t => t !== 'Summary' && t !== 'Template' && t !== 'admin_user' && !t.startsWith('รวม'));
   
-  // Test 5: เช็ค Version History / Revision ล่าสุด
-  console.log('\n--- Test 5: Spreadsheet last modified ---');
-  const drive = google.drive({ version: 'v3', auth });
-  try {
-    const fileInfo = await drive.files.get({
-      fileId: spreadsheetId,
-      fields: 'modifiedTime,lastModifyingUser',
+  const ranges = tabs.map(tab => `'${tab}'!A1:Z`);
+  const batchResponse = await sheets.spreadsheets.values.batchGet({ spreadsheetId, ranges });
+  
+  let totalSpent = 0;
+  for (let i = 0; i < tabs.length; i++) {
+    const tab = tabs[i];
+    const tabRows = batchResponse.data.valueRanges[i]?.values || [];
+    if (tabRows.length === 0) continue;
+    
+    const headerRowIndex = tabRows.findIndex(r => r.some(cell => cell && (cell.toString().includes('วัน/เดือน/ปี') || cell.toString().includes('วันที่'))));
+    const headerRow = headerRowIndex !== -1 ? tabRows[headerRowIndex] : [];
+    const paidIndex = headerRow.findIndex(cell => {
+       const text = (cell || '').toString().trim();
+       return text === 'จ่าย' || text === 'รายจ่าย';
     });
-    console.log('Last modified:', fileInfo.data.modifiedTime);
-    console.log('Last modified by:', JSON.stringify(fileInfo.data.lastModifyingUser));
-  } catch(e) {
-    console.log('Cannot access Drive API:', e.message);
+    
+    let spent = 0;
+    const startIndex = headerRowIndex !== -1 ? headerRowIndex + 1 : 9;
+    for (let r = startIndex; r < tabRows.length; r++) {
+       const row = tabRows[r];
+       if (!row[1]) continue;
+       const paid = paidIndex !== -1 ? parseFloat((row[paidIndex] || '0').toString().replace(/,/g, '')) || 0 : 0;
+       spent += paid;
+    }
+    if (spent > 0) {
+      console.log(`  ${tab}: ${spent.toLocaleString('th-TH', {minimumFractionDigits: 2})} บาท`);
+    }
+    totalSpent += spent;
   }
+  
+  console.log(`\n  Grand Total Spent: ${totalSpent.toLocaleString('th-TH', {minimumFractionDigits: 2})} บาท`);
+  console.log(`  (Google Sheet รวมวิชาการ แสดง: 92,304.89 บาท)`);
+  console.log(`  ตรงกัน: ${Math.abs(totalSpent - 92304.89) < 0.01 ? '✅ ใช่!' : '❌ ยังไม่ตรง (ห่าง ' + (totalSpent - 92304.89).toFixed(2) + ' บาท)'}`);
 }
 
-checkNow().catch(console.error);
+verify().catch(console.error);
