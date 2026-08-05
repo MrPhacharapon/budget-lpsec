@@ -30,17 +30,22 @@ export async function getGroupSummary(groupId: keyof typeof sheetIds) {
   }
 
   const metaData = await sheets.spreadsheets.get({ spreadsheetId });
-  const tabs = (metaData.data.sheets?.map(s => s.properties?.title) || []).filter(t => t !== 'Summary' && t !== 'Template' && t !== 'admin_user' && t !== 'รวมวิชาการ');
+  const allTabs = metaData.data.sheets?.map((s: any) => s.properties?.title) || [];
+  const summaryTabName = allTabs.find((t: string | undefined | null) => t && t.startsWith('รวม'));
+  const tabs = allTabs.filter((t: string | undefined | null) => t && t !== 'Summary' && t !== 'Template' && t !== 'admin_user' && !t.startsWith('รวม'));
   
   let totalAllocated = 0;
   let totalSpent = 0;
   const projects: any[] = [];
 
   if (tabs.length === 0) {
-    return { groupId, totalAllocated: 0, totalSpent: 0, totalRemaining: 0, projects: [] };
+    return { groupId, totalAllocated: 0, totalSpent: 0, totalRemaining: 0, projects: [], hasDiscrepancy: false };
   }
 
-  const ranges = tabs.map(tab => `'${tab}'!A1:Z`);
+  const ranges = tabs.map((tab: string) => `'${tab}'!A1:Z`);
+  if (summaryTabName) {
+    ranges.push(`'${summaryTabName}'!A1:Z`);
+  }
 
   try {
     const batchResponse = await sheets.spreadsheets.values.batchGet({
@@ -116,17 +121,45 @@ export async function getGroupSummary(groupId: keyof typeof sheetIds) {
         remaining: allocated - spent
       });
     }
+
+    let summaryAllocated = null;
+    let summarySpent = null;
+    if (summaryTabName && valueRanges.length > tabs.length) {
+      const summaryRows = valueRanges[tabs.length]?.values || [];
+      const totalRow = summaryRows.find(r => r[0] && r[0].toString().trim() === 'รวม');
+      if (totalRow) {
+        summaryAllocated = parseFloat((totalRow[2] || '0').toString().replace(/,/g, '')) || 0;
+        summarySpent = parseFloat((totalRow[3] || '0').toString().replace(/,/g, '')) || 0;
+      }
+    }
+
+    const isAllocatedMismatch = summaryAllocated !== null && Math.abs(summaryAllocated - totalAllocated) > 0.01;
+    const isSpentMismatch = summarySpent !== null && Math.abs(summarySpent - totalSpent) > 0.01;
+    const hasDiscrepancy = isAllocatedMismatch || isSpentMismatch;
+
+    return {
+      groupId,
+      totalAllocated,
+      totalSpent,
+      totalRemaining: totalAllocated - totalSpent,
+      projects,
+      summaryAllocated,
+      summarySpent,
+      hasDiscrepancy,
+      isAllocatedMismatch,
+      isSpentMismatch
+    };
   } catch (e: any) {
     console.error(`Error batch fetching for ${groupId}:`, e.message);
+    return {
+      groupId,
+      totalAllocated: 0,
+      totalSpent: 0,
+      totalRemaining: 0,
+      projects: [],
+      hasDiscrepancy: false
+    };
   }
-
-  return {
-    groupId,
-    totalAllocated,
-    totalSpent,
-    totalRemaining: totalAllocated - totalSpent,
-    projects
-  };
 }
 
 export async function getProjectDetails(groupId: keyof typeof sheetIds, tabName: string) {

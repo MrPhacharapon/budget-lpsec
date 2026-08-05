@@ -34,6 +34,61 @@ export default async function GroupPage({ params }: { params: { id: keyof typeof
         </div>
       </div>
 
+      {groupData.hasDiscrepancy && (
+        <div className="bg-rose-50 border-l-4 border-rose-500 p-5 rounded-r-2xl shadow-sm mb-6 flex flex-col gap-3">
+          <div className="flex items-center gap-2">
+            <span className="text-rose-500 text-xl">⚠️</span>
+            <h3 className="text-rose-800 font-bold text-lg">พบข้อมูลไม่สอดคล้องกัน (Discrepancy Detected)</h3>
+          </div>
+          <p className="text-rose-700 text-[14px]">
+            ระบบพบว่ายอดเงินที่คุณกรอกไว้ใน <strong className="font-extrabold">&quot;หน้าสรุป (รวม...)&quot;</strong> ไม่ตรงกับยอดเงินจริงที่ <strong className="font-extrabold">บวกจากทุกแผ่นงานย่อยรวมกัน</strong> 
+            (ยอดที่แสดงในระบบ Web App ตอนนี้ คือยอดจริงที่บวกจากแผ่นงานย่อยทั้งหมด ซึ่งมีความถูกต้องแม่นยำกว่าหน้าสรุป)
+          </p>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+            {groupData.isAllocatedMismatch && (
+              <div className="bg-white/60 p-4 rounded-xl border border-rose-100">
+                <div className="text-xs font-bold text-rose-500 uppercase tracking-wider mb-2">📌 ส่วนต่าง &quot;งบจัดสรร&quot;</div>
+                <div className="text-[13px] text-slate-700 space-y-1">
+                  <div className="flex justify-between border-b border-rose-100 pb-1">
+                    <span>ยอดที่คุณกรอกในหน้าสรุป:</span>
+                    <span className="font-semibold">{(groupData.summaryAllocated || 0).toLocaleString('th-TH', {minimumFractionDigits: 2})} ฿</span>
+                  </div>
+                  <div className="flex justify-between border-b border-rose-100 pb-1">
+                    <span>ยอดที่บวกจากแผ่นงานย่อย:</span>
+                    <span className="font-semibold text-emerald-600">{(groupData.totalAllocated || 0).toLocaleString('th-TH', {minimumFractionDigits: 2})} ฿</span>
+                  </div>
+                  <div className="flex justify-between pt-1">
+                    <span className="font-bold text-rose-700">ส่วนต่างที่หายไป (หรือเกินมา):</span>
+                    <span className="font-black text-rose-600">{Math.abs((groupData.summaryAllocated || 0) - (groupData.totalAllocated || 0)).toLocaleString('th-TH', {minimumFractionDigits: 2})} ฿</span>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {groupData.isSpentMismatch && (
+              <div className="bg-white/60 p-4 rounded-xl border border-rose-100">
+                <div className="text-xs font-bold text-rose-500 uppercase tracking-wider mb-2">📌 ส่วนต่าง &quot;ยอดใช้ไป&quot;</div>
+                <div className="text-[13px] text-slate-700 space-y-1">
+                  <div className="flex justify-between border-b border-rose-100 pb-1">
+                    <span>ยอดที่คุณกรอกในหน้าสรุป:</span>
+                    <span className="font-semibold">{(groupData.summarySpent || 0).toLocaleString('th-TH', {minimumFractionDigits: 2})} ฿</span>
+                  </div>
+                  <div className="flex justify-between border-b border-rose-100 pb-1">
+                    <span>ยอดที่บวกจากแผ่นงานย่อย:</span>
+                    <span className="font-semibold text-emerald-600">{(groupData.totalSpent || 0).toLocaleString('th-TH', {minimumFractionDigits: 2})} ฿</span>
+                  </div>
+                  <div className="flex justify-between pt-1">
+                    <span className="font-bold text-rose-700">ส่วนต่างที่หายไป (หรือเกินมา):</span>
+                    <span className="font-black text-rose-600">{Math.abs((groupData.summarySpent || 0) - (groupData.totalSpent || 0)).toLocaleString('th-TH', {minimumFractionDigits: 2})} ฿</span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="glass-panel rounded-2xl p-6 flex flex-col justify-center">
           <span className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">รวมงบจัดสรร</span>

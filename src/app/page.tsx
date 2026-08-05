@@ -108,7 +108,19 @@ export default async function DashboardPage() {
                   const percent = group.data?.totalAllocated ? ((group.data.totalSpent / group.data.totalAllocated) * 100) : 0;
                   return (
                     <tr key={group.title} className="hover:bg-white/45 transition-all border-b border-slate-900/5">
-                      <td className="p-4 text-slate-900 font-semibold">{group.title}</td>
+                      <td className="p-4 text-slate-900 font-semibold">
+                        <div className="flex items-center gap-2">
+                          {group.title}
+                          {group.data?.hasDiscrepancy && (
+                            <span 
+                              className="bg-rose-100 text-rose-600 text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap cursor-help"
+                              title="ยอดจัดสรรหรือยอดใช้ไปใน 'หน้าสรุป' ไม่ตรงกับยอดรวมจริงที่บวกจาก 'แผ่นงานย่อย'"
+                            >
+                              ⚠️ ยอดหน้าสรุปไม่ตรง
+                            </span>
+                          )}
+                        </div>
+                      </td>
                       <td className="p-4 text-slate-900 text-right">{(group.data?.totalAllocated || 0).toLocaleString('th-TH', { minimumFractionDigits: 2 })}</td>
                       <td className="p-4 text-red-600 font-bold text-right">{(group.data?.totalSpent || 0).toLocaleString('th-TH', { minimumFractionDigits: 2 })}</td>
                       <td className="p-4 text-emerald-600 font-bold text-right">{(group.data?.totalRemaining || 0).toLocaleString('th-TH', { minimumFractionDigits: 2 })}</td>
