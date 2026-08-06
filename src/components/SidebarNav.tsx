@@ -27,7 +27,8 @@ export default function SidebarNav() {
           );
         }
 
-        const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
+        const href = item.href || '';
+        const isActive = pathname === href || (href !== '/' && pathname.startsWith(href));
 
         const Icon = item.icon;
 
