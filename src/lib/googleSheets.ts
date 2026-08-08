@@ -108,7 +108,12 @@ export async function getGroupSummary(groupId: keyof typeof sheetIds) {
       const startIndex = headerRowIndex !== -1 ? headerRowIndex + 1 : 9;
       for (let r = startIndex; r < rows.length; r++) {
          const row = rows[r];
-         if (!row[1]) continue; 
+         const hasDate = !!row[1];
+         const hasDesc = !!row[2];
+         const receivedVal = receivedIndex !== -1 ? (row[receivedIndex] || '').toString().trim() : '';
+         const paidVal = paidIndex !== -1 ? (row[paidIndex] || '').toString().trim() : '';
+         
+         if (!hasDate && !hasDesc && receivedVal === '' && paidVal === '') continue;
          const paid = paidIndex !== -1 ? parseFloat((row[paidIndex] || '0').toString().replace(/,/g, '')) || 0 : 0;
          spent += paid;
       }
@@ -244,10 +249,17 @@ export async function getProjectDetails(groupId: keyof typeof sheetIds, tabName:
   
   for (let r = startIndex; r < rows.length; r++) {
      const row = rows[r];
-     if (!row[1]) continue; 
-
-     const received = receivedIndex !== -1 ? parseFloat((row[receivedIndex] || '0').toString().replace(/,/g, '')) || 0 : 0;
-     const paid = paidIndex !== -1 ? parseFloat((row[paidIndex] || '0').toString().replace(/,/g, '')) || 0 : 0;
+     
+     const hasDate = !!row[1];
+     const hasDesc = !!row[2];
+     const receivedVal = receivedIndex !== -1 ? (row[receivedIndex] || '').toString().trim() : '';
+     const paidVal = paidIndex !== -1 ? (row[paidIndex] || '').toString().trim() : '';
+     
+     // Skip if no date, no description, no received, and no paid amount
+     if (!hasDate && !hasDesc && receivedVal === '' && paidVal === '') continue;
+     
+     const received = parseFloat(receivedVal.replace(/,/g, '')) || 0;
+     const paid = parseFloat(paidVal.replace(/,/g, '')) || 0;
      const remaining = remainingIndex !== -1 ? parseFloat((row[remainingIndex] || '0').toString().replace(/,/g, '')) || 0 : 0;
      const note = noteIndex !== -1 ? (row[noteIndex] || '') : (row[row.length - 1] || '');
 
