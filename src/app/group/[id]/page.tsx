@@ -13,11 +13,12 @@ export default async function GroupPage({ params }: { params: Promise<{ id: stri
 
   const groupData = await getGroupSummary(groupId);
 
-  const groupTitles = {
+  const groupTitles: Record<keyof typeof sheetIds, string> = {
     academic: 'กลุ่มบริหารงานวิชาการ',
     planning: 'กลุ่มงานแผนงานและงบประมาณ',
     personnel: 'กลุ่มบริหารงานบุคคล',
     general: 'กลุ่มบริหารงานทั่วไป',
+    admin: 'ผู้ดูแลระบบ',
   };
 
   return (

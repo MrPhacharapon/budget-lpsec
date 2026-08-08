@@ -7,6 +7,7 @@ export const sheetIds = {
   planning: process.env.SHEET_ID_PLANNING,
   personnel: process.env.SHEET_ID_PERSONNEL,
   general: process.env.SHEET_ID_GENERAL,
+  admin: process.env.SHEET_ID_ADMIN,
 };
 
 export async function getGoogleSheetsClient() {
@@ -327,5 +328,147 @@ export async function addTransaction(groupId: keyof typeof sheetIds, tabName: st
     },
   });
 
+  return { success: true };
+}
+
+export async function getAdminUsers() {
+  const sheets = await getGoogleSheetsClient();
+  const spreadsheetId = sheetIds.admin;
+  if (!spreadsheetId) throw new Error('ไม่พบ Spreadsheet ID สำหรับ Admin');
+
+  const response = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range: "'admin_user'!A2:C",
+  });
+
+  const rows = response.data.values || [];
+  return rows.map(r => ({
+    username: r[0] || '',
+    password: r[1] || '',
+    displayName: r[2] || '',
+  }));
+}
+
+export async function logAdminAction(adminUser: string, action: string, group: string, project: string, details: string) {
+  const sheets = await getGoogleSheetsClient();
+  const spreadsheetId = sheetIds.admin;
+  if (!spreadsheetId) return;
+
+  const timestamp = new Date().toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' });
+  const rowData = [timestamp, adminUser, action, group, project, details];
+
+  await sheets.spreadsheets.values.append({
+    spreadsheetId,
+    range: "'Log'!A1:F",
+    valueInputOption: 'USER_ENTERED',
+    requestBody: {
+      values: [rowData],
+    },
+  });
+}
+
+export async function updateTransaction(groupId: keyof typeof sheetIds, tabName: string, rowIndex: number, data: any) {
+  const sheets = await getGoogleSheetsClient();
+  const spreadsheetId = sheetIds[groupId];
+  if (!spreadsheetId) throw new Error('ไม่พบ Spreadsheet ID');
+
+  const response = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range: `'${tabName}'!A1:Z10`,
+  });
+  const rows = response.data.values || [];
+  const headerRowIndex = rows.findIndex(r => r.some(cell => cell && (cell.toString().includes('วัน/เดือน/ปี') || cell.toString().includes('วันที่'))));
+  const headerRow = headerRowIndex !== -1 ? rows[headerRowIndex] : [];
+  
+  const paidIndex = headerRow.findIndex(c => (c || '').toString().trim() === 'จ่าย' || (c || '').toString().trim() === 'รายจ่าย');
+  const receivedIndex = headerRow.findIndex(c => (c || '').toString().trim() === 'รับ' || (c || '').toString().trim() === 'รายรับ');
+  const noteIndex = headerRow.findIndex(c => (c || '').toString().trim() === 'หมายเหตุ');
+
+  const rowLength = Math.max(headerRow.length, 7);
+  const rowData = new Array(rowLength).fill('');
+  
+  rowData[0] = data.no || '';
+  rowData[1] = data.date || '';
+  rowData[2] = data.description || '';
+  
+  if (receivedIndex !== -1) rowData[receivedIndex] = data.received || '';
+  if (paidIndex !== -1) rowData[paidIndex] = data.paid || '';
+  if (noteIndex !== -1) rowData[noteIndex] = data.note || '';
+
+  const actualRow = rowIndex + 1;
+  await sheets.spreadsheets.values.update({
+    spreadsheetId,
+    range: `'${tabName}'!A${actualRow}`,
+    valueInputOption: 'USER_ENTERED',
+    requestBody: { values: [rowData] },
+  });
+  return { success: true };
+}
+
+export async function deleteTransaction(groupId: keyof typeof sheetIds, tabName: string, rowIndex: number) {
+  const sheets = await getGoogleSheetsClient();
+  const spreadsheetId = sheetIds[groupId];
+  if (!spreadsheetId) throw new Error('ไม่พบ Spreadsheet ID');
+  
+  const metaData = await sheets.spreadsheets.get({ spreadsheetId });
+  const sheet = metaData.data.sheets?.find(s => s.properties?.title === tabName);
+  const sheetId = sheet?.properties?.sheetId;
+
+  if (sheetId === undefined) throw new Error('Sheet not found');
+
+  await sheets.spreadsheets.batchUpdate({
+    spreadsheetId,
+    requestBody: {
+      requests: [
+        {
+          deleteDimension: {
+            range: {
+              sheetId: sheetId,
+              dimension: 'ROWS',
+              startIndex: rowIndex,
+              endIndex: rowIndex + 1
+            }
+          }
+        }
+      ]
+    }
+  });
+  return { success: true };
+}
+
+export async function reorderTransaction(groupId: keyof typeof sheetIds, tabName: string, sourceIndex: number, destinationIndex: number) {
+  const sheets = await getGoogleSheetsClient();
+  const spreadsheetId = sheetIds[groupId];
+  if (!spreadsheetId) throw new Error('ไม่พบ Spreadsheet ID');
+  
+  const metaData = await sheets.spreadsheets.get({ spreadsheetId });
+  const sheet = metaData.data.sheets?.find(s => s.properties?.title === tabName);
+  const sheetId = sheet?.properties?.sheetId;
+
+  if (sheetId === undefined) throw new Error('Sheet not found');
+
+  let destination = destinationIndex;
+  if (sourceIndex < destinationIndex) {
+    destination = destinationIndex + 1;
+  }
+
+  await sheets.spreadsheets.batchUpdate({
+    spreadsheetId,
+    requestBody: {
+      requests: [
+        {
+          moveDimension: {
+            source: {
+              sheetId: sheetId,
+              dimension: 'ROWS',
+              startIndex: sourceIndex,
+              endIndex: sourceIndex + 1
+            },
+            destinationIndex: destination
+          }
+        }
+      ]
+    }
+  });
   return { success: true };
 }
