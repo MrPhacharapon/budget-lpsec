@@ -114,6 +114,10 @@ export async function getGroupSummary(groupId: keyof typeof sheetIds) {
          const paidVal = paidIndex !== -1 ? (row[paidIndex] || '').toString().trim() : '';
          
          if (!hasDate && !hasDesc && receivedVal === '' && paidVal === '') continue;
+         
+         const isTotalRow = !hasDate && row.some(cell => cell && cell.toString().includes('รวม'));
+         if (isTotalRow) continue;
+         
          const paid = paidIndex !== -1 ? parseFloat((row[paidIndex] || '0').toString().replace(/,/g, '')) || 0 : 0;
          spent += paid;
       }
@@ -257,6 +261,10 @@ export async function getProjectDetails(groupId: keyof typeof sheetIds, tabName:
      
      // Skip if no date, no description, no received, and no paid amount
      if (!hasDate && !hasDesc && receivedVal === '' && paidVal === '') continue;
+     
+     // Skip if row is a total row (contains 'รวม' and has no date)
+     const isTotalRow = !hasDate && row.some(cell => cell && cell.toString().includes('รวม'));
+     if (isTotalRow) continue;
      
      const received = parseFloat(receivedVal.replace(/,/g, '')) || 0;
      const paid = parseFloat(paidVal.replace(/,/g, '')) || 0;
