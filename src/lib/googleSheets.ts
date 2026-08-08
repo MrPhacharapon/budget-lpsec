@@ -87,7 +87,7 @@ export async function getGroupSummary(groupId: keyof typeof sheetIds) {
       if (projectNameRowOld) {
          projectName = projectNameRowOld[0].toString().replace('ชื่องาน/โครงการ:', '').trim();
          if (projectNameRowOld.length >= 4) {
-             allocated = parseFloat(projectNameRowOld[3].toString().replace(/,/g, '')) || 0;
+             allocated = parseFloat(projectNameRowOld[3].toString().replace(/[, \s]/g, '')) || 0;
          }
       } else {
          if (rows[0] && rows[0][0]) {
@@ -99,7 +99,7 @@ export async function getGroupSummary(groupId: keyof typeof sheetIds) {
          if (headerRowIndex !== -1 && rows.length > headerRowIndex + 1) {
              const budgetRow = rows[headerRowIndex + 1];
              if (!budgetRow[1] && remainingIndex !== -1) {
-                 allocated = parseFloat((budgetRow[remainingIndex] || '0').toString().replace(/,/g, '')) || 0;
+                 allocated = parseFloat((budgetRow[remainingIndex] || '0').toString().replace(/[, \s]/g, '')) || 0;
              }
          }
       }
@@ -118,7 +118,7 @@ export async function getGroupSummary(groupId: keyof typeof sheetIds) {
          const isTotalRow = !hasDate && row.some(cell => cell && cell.toString().includes('รวม'));
          if (isTotalRow) continue;
          
-         const paid = paidIndex !== -1 ? parseFloat((row[paidIndex] || '0').toString().replace(/,/g, '')) || 0 : 0;
+         const paid = paidIndex !== -1 ? parseFloat((row[paidIndex] || '0').toString().replace(/[, \s]/g, '')) || 0 : 0;
          spent += paid;
       }
 
@@ -149,8 +149,8 @@ export async function getGroupSummary(groupId: keyof typeof sheetIds) {
       const summaryRows = valueRanges[tabs.length]?.values || [];
       const totalRow = summaryRows.find(r => r[0] && r[0].toString().trim() === 'รวม');
       if (totalRow) {
-        summaryAllocated = parseFloat((totalRow[2] || '0').toString().replace(/,/g, '')) || 0;
-        summarySpent = parseFloat((totalRow[3] || '0').toString().replace(/,/g, '')) || 0;
+        summaryAllocated = parseFloat((totalRow[2] || '0').toString().replace(/[, \s]/g, '')) || 0;
+        summarySpent = parseFloat((totalRow[3] || '0').toString().replace(/[, \s]/g, '')) || 0;
       }
     }
 
@@ -230,7 +230,7 @@ export async function getProjectDetails(groupId: keyof typeof sheetIds, tabName:
   if (projectNameRowOld) {
      projectName = projectNameRowOld[0].toString().replace('ชื่องาน/โครงการ:', '').trim();
      if (projectNameRowOld.length >= 4) {
-         allocated = parseFloat(projectNameRowOld[3].toString().replace(/,/g, '')) || 0;
+         allocated = parseFloat(projectNameRowOld[3].toString().replace(/[, \s]/g, '')) || 0;
      }
   } else {
      if (rows[0] && rows[0][0]) {
@@ -242,7 +242,7 @@ export async function getProjectDetails(groupId: keyof typeof sheetIds, tabName:
      if (headerRowIndex !== -1 && rows.length > headerRowIndex + 1) {
          const budgetRow = rows[headerRowIndex + 1];
          if (!budgetRow[1] && remainingIndex !== -1) {
-             allocated = parseFloat((budgetRow[remainingIndex] || '0').toString().replace(/,/g, '')) || 0;
+             allocated = parseFloat((budgetRow[remainingIndex] || '0').toString().replace(/[, \s]/g, '')) || 0;
          }
      }
   }
@@ -266,9 +266,9 @@ export async function getProjectDetails(groupId: keyof typeof sheetIds, tabName:
      const isTotalRow = !hasDate && row.some(cell => cell && cell.toString().includes('รวม'));
      if (isTotalRow) continue;
      
-     const received = parseFloat(receivedVal.replace(/,/g, '')) || 0;
-     const paid = parseFloat(paidVal.replace(/,/g, '')) || 0;
-     const remaining = remainingIndex !== -1 ? parseFloat((row[remainingIndex] || '0').toString().replace(/,/g, '')) || 0 : 0;
+     const received = parseFloat(receivedVal.replace(/[, \s]/g, '')) || 0;
+     const paid = parseFloat(paidVal.replace(/[, \s]/g, '')) || 0;
+     const remaining = remainingIndex !== -1 ? parseFloat((row[remainingIndex] || '0').toString().replace(/[, \s]/g, '')) || 0 : 0;
      const note = noteIndex !== -1 ? (row[noteIndex] || '') : (row[row.length - 1] || '');
 
      spent += paid;
