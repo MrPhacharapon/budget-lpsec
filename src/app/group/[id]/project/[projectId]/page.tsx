@@ -76,8 +76,8 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
                       <td className="p-3 text-slate-600 text-center font-medium keep-all">{tx.no}</td>
                       <td className="p-3 text-slate-600 whitespace-nowrap font-medium keep-all">{tx.date}</td>
                       <td className="p-3 text-slate-900 font-bold keep-all">{tx.description}</td>
-                      <td className="p-3 text-emerald-600 font-extrabold text-right keep-all">{tx.received > 0 ? tx.received.toLocaleString('th-TH', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
-                      <td className="p-3 text-rose-600 font-extrabold text-right keep-all">{tx.paid > 0 ? tx.paid.toLocaleString('th-TH', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
+                      <td className="p-3 text-emerald-600 font-extrabold text-right keep-all">{tx.received !== 0 ? tx.received.toLocaleString('th-TH', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
+                      <td className="p-3 text-rose-600 font-extrabold text-right keep-all">{tx.paid !== 0 ? tx.paid.toLocaleString('th-TH', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
                       <td className="p-3 text-slate-900 font-extrabold text-right keep-all">{(tx.remaining || 0).toLocaleString('th-TH', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
                       <td className="p-3 text-slate-500 text-[13px] font-medium keep-all">{tx.note}</td>
                     </tr>
