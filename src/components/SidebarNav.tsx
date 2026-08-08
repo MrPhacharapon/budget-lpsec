@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, BookOpen, PieChart, Users, Layers } from 'lucide-react';
+import { LayoutDashboard, BookOpen, PieChart, Users, Layers, Settings } from 'lucide-react';
 
 export default function SidebarNav() {
   const pathname = usePathname();
@@ -14,6 +14,8 @@ export default function SidebarNav() {
     { href: '/group/planning', label: 'กลุ่มงานแผนงานและงบประมาณ', icon: PieChart },
     { href: '/group/personnel', label: 'กลุ่มบริหารงานบุคคล', icon: Users },
     { href: '/group/general', label: 'กลุ่มบริหารงานทั่วไป', icon: Layers },
+    { type: 'divider', label: 'ระบบจัดการ' },
+    { href: '/admin', label: 'สำหรับผู้ดูแลระบบ', icon: Settings },
   ];
 
   return (
