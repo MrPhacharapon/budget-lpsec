@@ -25,7 +25,7 @@ export default function AdminLogin() {
 
       const data = await res.json();
       if (res.ok && data.success) {
-        router.push('/admin');
+        window.location.href = '/admin';
       } else {
         setError(data.error || 'การเข้าสู่ระบบล้มเหลว');
       }

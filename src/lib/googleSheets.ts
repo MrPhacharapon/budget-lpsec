@@ -3,11 +3,11 @@ import { google } from 'googleapis';
 const SCOPES = ['https://www.googleapis.com/auth/spreadsheets'];
 
 export const sheetIds = {
-  academic: process.env.SHEET_ID_ACADEMIC,
-  planning: process.env.SHEET_ID_PLANNING,
-  personnel: process.env.SHEET_ID_PERSONNEL,
-  general: process.env.SHEET_ID_GENERAL,
-  admin: process.env.SHEET_ID_ADMIN,
+  academic: process.env.SHEET_ID_ACADEMIC || '1XQk1gfdaNjiD3BSO6gM1CsTRrxZvFR0ECnNdumCg3Fo',
+  planning: process.env.SHEET_ID_PLANNING || '1nK7NfyDp55NIIopLpg0RCnLAyzKGlosAwGVoAN2lGnE',
+  personnel: process.env.SHEET_ID_PERSONNEL || '1nLfb6FMXYj4F1iuKLBKp9pVaoHLvh_IcuD-8CaSM6Ks',
+  general: process.env.SHEET_ID_GENERAL || '1N6iXBZpG8PyJ27_0poCYxwzMiqnPV0L_emVzXtUJNKs',
+  admin: process.env.SHEET_ID_ADMIN || '19bmznGH3ScJg0z6nI_kf7P2Hg5-Fg51SCDhEEfMv4mg',
 };
 
 export async function getGoogleSheetsClient() {
@@ -363,9 +363,9 @@ export async function getAdminUsers() {
 
   const rows = response.data.values || [];
   return rows.map(r => ({
-    username: r[0] || '',
-    password: r[1] || '',
-    displayName: r[2] || '',
+    username: (r[0] || '').toString().trim(),
+    password: (r[1] || '').toString().trim(),
+    displayName: (r[2] || '').toString().trim(),
   }));
 }
 

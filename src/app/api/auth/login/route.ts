@@ -10,7 +10,11 @@ export async function POST(request: Request) {
     const adminUsers = await getAdminUsers();
     
     // Find matching user
-    const user = adminUsers.find(u => u.username === username && u.password === password);
+    const inputUsername = (username || '').toString().trim().toLowerCase();
+    const inputPassword = (password || '').toString().trim();
+    const user = adminUsers.find(
+      u => u.username.toLowerCase().trim() === inputUsername && u.password.trim() === inputPassword
+    );
 
     if (!user) {
       return NextResponse.json({ error: 'Username หรือ Password ไม่ถูกต้อง' }, { status: 401 });
@@ -33,6 +37,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true, user: { username: user.username, displayName: user.displayName } });
   } catch (error: any) {
     console.error('Login error:', error);
-    return NextResponse.json({ error: 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ' }, { status: 500 });
+    return NextResponse.json({ error: error?.message || 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ' }, { status: 500 });
   }
 }
